@@ -35,23 +35,13 @@ A single bash script that sets up a hardened, high-performance WordPress server 
 ### One-line install (directly from GitHub)
 
 ```bash
-sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh)
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh
 ```
 
-Or with flags (non-interactive):
+With flags (non-interactive):
 
 ```bash
-sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh) \
-  --domain example.com --email admin@example.com --ssl
-```
-
-> **Note:** `bash <(curl ...)` is used instead of `curl | bash` to preserve interactive prompts.
-
-### Local install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o install-wordpress.sh
-sudo bash install-wordpress.sh
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh --domain example.com --email admin@example.com --ssl
 ```
 
 The script will interactively ask for:
@@ -148,23 +138,13 @@ Ein einzelnes Bash-Script, das einen abgesicherten, leistungsstarken WordPress-S
 ### Ein-Befehl-Installation (direkt von GitHub)
 
 ```bash
-sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh)
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh
 ```
 
-Oder mit Flags (nicht-interaktiv):
+Mit Flags (nicht-interaktiv):
 
 ```bash
-sudo bash <(curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh) \
-  --domain example.com --email admin@example.com --ssl
-```
-
-> **Hinweis:** `bash <(curl ...)` wird statt `curl | bash` verwendet, damit die interaktiven Abfragen funktionieren.
-
-### Lokale Installation
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o install-wordpress.sh
-sudo bash install-wordpress.sh
+curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh --domain example.com --email admin@example.com --ssl
 ```
 
 Das Script fragt interaktiv nach:
