@@ -1064,16 +1064,20 @@ success "Automatische DB-Backups konfiguriert (/root/backups/mysql, 7 Tage Rotat
 if [[ "$INSTALL_SSL" == true ]]; then
   info "Installiere Certbot und richte SSL ein..."
   apt-get install -y -qq certbot python3-certbot-nginx
-  certbot --nginx --non-interactive --agree-tos \
+  if certbot --nginx --non-interactive --agree-tos \
     -m "${WP_ADMIN_EMAIL}" \
     -d "${WP_DOMAIN}" \
     -d "www.${WP_DOMAIN}" \
-    --redirect
-  # HTTPS-Redirect im Vhost aktivieren
-  sed -i 's|# return 301 https://|return 301 https://|' \
-    "/etc/nginx/sites-available/${WP_DOMAIN}.conf"
-  systemctl reload nginx
-  success "SSL-Zertifikat eingerichtet. HTTPS aktiv."
+    --redirect; then
+    # HTTPS-Redirect im Vhost aktivieren
+    sed -i 's|# return 301 https://|return 301 https://|' \
+      "/etc/nginx/sites-available/${WP_DOMAIN}.conf"
+    systemctl reload nginx
+    success "SSL-Zertifikat eingerichtet. HTTPS aktiv."
+  else
+    warn "Certbot fehlgeschlagen — möglicherweise läuft ein Reverse Proxy (NPM/Cloudflare) vor diesem Server."
+    warn "SSL wird in diesem Fall vom Reverse Proxy verwaltet. Certbot auf dem WordPress-Server nicht notwendig."
+  fi
 else
   info "SSL übersprungen. Manuell einrichten: certbot --nginx -d ${WP_DOMAIN}"
 fi
