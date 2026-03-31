@@ -8,8 +8,6 @@
 
 Automated, production-ready WordPress installer for Ubuntu 24.04 LTS and Debian 13 (Trixie).
 
-<a href="https://www.buymeacoffee.com/djanzin"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=djanzin&button_colour=00354d&font_colour=ffffff&font_family=Cookie&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
-
 ---
 
 ## English
@@ -113,6 +111,8 @@ Database backups are stored in:
 /root/backups/mysql/  (daily, 7-day rotation)
 ```
 
+<a href="https://www.buymeacoffee.com/djanzin"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=djanzin&button_colour=00354d&font_colour=ffffff&font_family=Cookie&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
+
 ---
 
 ## Deutsch
@@ -215,6 +215,8 @@ Datenbank-Backups befinden sich in:
 ```
 /root/backups/mysql/  (täglich, 7 Tage Rotation)
 ```
+
+<a href="https://www.buymeacoffee.com/djanzin"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=djanzin&button_colour=00354d&font_colour=ffffff&font_family=Cookie&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
 
 ---
 
