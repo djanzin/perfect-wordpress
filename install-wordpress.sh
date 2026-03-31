@@ -382,6 +382,7 @@ server {
 
     # ─── FastCGI Cache Status Header ──────────────────────────────────────────
     add_header X-Cache-Status \$upstream_cache_status always;
+    add_header X-Cache-Enabled "true" always;
 
     # ─── Cache bypass logic ───────────────────────────────────────────────────
     set \$skip_cache 0;
