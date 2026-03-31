@@ -171,10 +171,14 @@ success "Alle Caches geleert."
 PMA_DIR="/var/www/phpmyadmin"
 if [[ -d "$PMA_DIR" ]]; then
   section "phpMyAdmin Update"
-  PMA_CURRENT=$(grep -r "VERSION = '" "${PMA_DIR}/libraries/classes/Version.php" 2>/dev/null \
-    | grep -oP "[\d.]+" | head -1 || \
-    cat "${PMA_DIR}/composer.json" 2>/dev/null \
-    | grep '"version"' | grep -oP "[\d.]+" | head -1 || echo "unbekannt")
+  PMA_CURRENT=$(grep -oP "(?<=VERSION = ')[\d.]+" "${PMA_DIR}/libraries/classes/Version.php" 2>/dev/null \
+    | head -1 || \
+    grep -oP "(?<=\"version\": \")[\d.]+" "${PMA_DIR}/composer.json" 2>/dev/null \
+    | head -1 || \
+    php -r "define('ROOT_PATH', '${PMA_DIR}/'); \
+      require '${PMA_DIR}/libraries/classes/Version.php'; \
+      echo \PhpMyAdmin\Version::VERSION;" 2>/dev/null \
+    || echo "unbekannt")
   info "Installierte Version: ${PMA_CURRENT}"
 
   PMA_LATEST=$(curl -fsSL https://www.phpmyadmin.net/home_page/version.txt 2>/dev/null \
