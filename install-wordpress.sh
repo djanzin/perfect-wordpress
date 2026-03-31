@@ -217,7 +217,8 @@ fi
 # 2. NGINX + FastCGI Cache
 # =============================================================================
 section "2/9 — Nginx + FastCGI Cache"
-apt-get install -y -qq nginx libnginx-mod-http-cache-purge
+apt-get install -y -qq nginx libnginx-mod-http-cache-purge \
+  libnginx-mod-http-brotli-filter libnginx-mod-http-brotli-static
 systemctl enable nginx
 
 # FastCGI Cache Verzeichnis
@@ -576,9 +577,9 @@ sed -i 's/^max_input_time.*/max_input_time = 300/'            "$PHP_INI"
 sed -i 's/^;max_input_vars.*/max_input_vars = 3000/'          "$PHP_INI"
 sed -i 's/^expose_php.*/expose_php = Off/'                    "$PHP_INI"
 
-# OPcache Konfiguration
-cat > "/etc/php/${PHP_VERSION}/mods-available/opcache.ini" <<'OPCACHE'
-zend_extension=opcache.so
+# OPcache Tuning (separate Datei — System's opcache.ini bleibt unberührt)
+# zend_extension wird bereits vom php-opcache Paket geladen — nicht doppelt laden!
+cat > "/etc/php/${PHP_VERSION}/fpm/conf.d/99-opcache-wordpress.ini" <<'OPCACHE'
 opcache.enable=1
 opcache.enable_cli=0
 opcache.memory_consumption=256
