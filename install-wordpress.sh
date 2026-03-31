@@ -1068,7 +1068,7 @@ rm -rf /tmp/wordpress /tmp/wordpress.tar.gz
 chown -R www-data:www-data "$WP_DIR"
 find "$WP_DIR" -type d -exec chmod 755 {} \;
 find "$WP_DIR" -type f -exec chmod 644 {} \;
-chmod 440 "$WP_DIR/wp-config.php" 2>/dev/null || true
+chmod 640 "$WP_DIR/wp-config.php" 2>/dev/null || true
 
 # wp-config.php erstellen
 WP_SECURITY_KEYS=$(curl -sSL https://api.wordpress.org/secret-key/1.1/salt/)
@@ -1137,7 +1137,7 @@ if ( isset( \$_SERVER['HTTP_X_FORWARDED_PROTO'] ) && \$_SERVER['HTTP_X_FORWARDED
 require_once ABSPATH . 'wp-settings.php';
 WPCONFIG
 
-chmod 440 "$WP_DIR/wp-config.php"
+chmod 640 "$WP_DIR/wp-config.php"
 chown www-data:www-data "$WP_DIR/wp-config.php"
 
 # .htaccess
