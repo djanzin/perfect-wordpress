@@ -52,6 +52,7 @@ PHP_MEMORY_LIMIT="256M"
 WP_LANG="de_DE"
 WP_TIMEZONE="Europe/Berlin"
 INSTALL_SSL=false
+INSTALL_PHPMYADMIN=false
 
 # ─── Parse arguments ──────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -64,7 +65,8 @@ while [[ $# -gt 0 ]]; do
     --memory)       PHP_MEMORY_LIMIT="$2"; shift 2 ;;
     --lang)         WP_LANG="$2";          shift 2 ;;
     --timezone)     WP_TIMEZONE="$2";      shift 2 ;;
-    --ssl)          INSTALL_SSL=true;      shift   ;;
+    --ssl)          INSTALL_SSL=true;        shift   ;;
+    --phpmyadmin)   INSTALL_PHPMYADMIN=true; shift   ;;
     *) warn "Unbekannter Parameter: $1"; shift ;;
   esac
 done
@@ -140,6 +142,12 @@ if [[ "$INSTALL_SSL" == false ]]; then
   [[ "${_ssl,,}" == "j" || "${_ssl,,}" == "y" ]] && INSTALL_SSL=true
 fi
 
+# ─── phpMyAdmin installieren? ─────────────────────────────────────────────────
+if [[ "$INSTALL_PHPMYADMIN" == false ]]; then
+  read -rp "$(echo -e "${BOLD}phpMyAdmin installieren? (Subdomain: phpmyadmin.${WP_DOMAIN}) [j/N]:${RESET} ")" _pma
+  [[ "${_pma,,}" == "j" || "${_pma,,}" == "y" ]] && INSTALL_PHPMYADMIN=true
+fi
+
 # ─── Generate random secrets ──────────────────────────────────────────────────
 DB_NAME="wp_$(tr -dc 'a-z0-9' </dev/urandom | head -c 8 || true)"
 DB_USER="wpuser_$(tr -dc 'a-z0-9' </dev/urandom | head -c 6 || true)"
@@ -147,6 +155,10 @@ DB_PASS="$(tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 32 || true)"
 # DB_ROOT_PASS nicht mehr benötigt — MariaDB root nutzt unix_socket Auth
 WP_ADMIN_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 24 || true)"
 REDIS_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 || true)"
+PMA_DB_USER="pma_$(tr -dc 'a-z0-9' </dev/urandom | head -c 6 || true)"
+PMA_DB_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 32 || true)"
+PMA_BLOWFISH="$(tr -dc 'A-Za-z0-9!@#$%^&*()_+' </dev/urandom | head -c 32 || true)"
+PMA_HTPASSWD_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16 || true)"
 
 # ─── Summary ──────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}Installationsparameter:${RESET}"
@@ -157,6 +169,7 @@ echo -e "  Memory Limit  : ${CYAN}${PHP_MEMORY_LIMIT}${RESET}"
 echo -e "  Sprache       : ${CYAN}${WP_LANG}${RESET}"
 echo -e "  Zeitzone      : ${CYAN}${WP_TIMEZONE}${RESET}"
 echo -e "  SSL           : ${CYAN}${INSTALL_SSL}${RESET}"
+echo -e "  phpMyAdmin    : ${CYAN}${INSTALL_PHPMYADMIN}${RESET}"
 echo -e "  DB Name       : ${CYAN}${DB_NAME}${RESET}"
 echo -e "  DB User       : ${CYAN}${DB_USER}${RESET}"
 echo ""
@@ -178,6 +191,16 @@ DB Password:     ${DB_PASS}
 DB Root Access:  unix_socket (sudo mysql -uroot)
 Redis Password:  ${REDIS_PASS}
 EOF
+
+if [[ "$INSTALL_PHPMYADMIN" == true ]]; then
+cat >> "$CREDS_FILE" <<EOF
+─────────────────────────────────────
+phpMyAdmin URL:     http://phpmyadmin.${WP_DOMAIN}
+phpMyAdmin Login:   ${WP_ADMIN_USER} / ${PMA_HTPASSWD_PASS}  (HTTP Basic Auth)
+PMA DB User:        ${PMA_DB_USER}
+PMA DB Password:    ${PMA_DB_PASS}
+EOF
+fi
 chmod 600 "$CREDS_FILE"
 info "Zugangsdaten gespeichert: $CREDS_FILE"
 
@@ -1034,6 +1057,99 @@ if [[ "$INSTALL_SSL" == true ]]; then
   success "SSL-Zertifikat eingerichtet. HTTPS aktiv."
 else
   info "SSL übersprungen. Manuell einrichten: certbot --nginx -d ${WP_DOMAIN}"
+fi
+
+# ─── phpMyAdmin ───────────────────────────────────────────────────────────────
+if [[ "$INSTALL_PHPMYADMIN" == true ]]; then
+  section "phpMyAdmin"
+  PMA_DIR="/var/www/phpmyadmin"
+  PMA_DOMAIN="phpmyadmin.${WP_DOMAIN}"
+
+  # Aktuelle Version ermitteln
+  PMA_VERSION=$(curl -fsSL https://www.phpmyadmin.net/home_page/version.txt 2>/dev/null | head -1 | tr -d '[:space:]') || true
+  [[ -z "$PMA_VERSION" || ! "$PMA_VERSION" =~ ^[0-9]+\.[0-9]+ ]] && PMA_VERSION="5.2.2"
+  info "phpMyAdmin Version: ${PMA_VERSION}"
+
+  # Download & entpacken
+  curl -fsSL "https://files.phpmyadmin.net/phpMyAdmin/${PMA_VERSION}/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz" \
+    -o /tmp/phpmyadmin.tar.gz
+  mkdir -p "$PMA_DIR"
+  tar -xzf /tmp/phpmyadmin.tar.gz -C /tmp/
+  cp -r "/tmp/phpMyAdmin-${PMA_VERSION}-all-languages/." "$PMA_DIR/"
+  rm -rf /tmp/phpmyadmin.tar.gz "/tmp/phpMyAdmin-${PMA_VERSION}-all-languages"
+
+  # Temp-Verzeichnis
+  mkdir -p /var/lib/phpmyadmin/tmp
+  chown -R www-data:www-data "$PMA_DIR" /var/lib/phpmyadmin
+  chmod 750 "$PMA_DIR"
+
+  # MariaDB-User für phpMyAdmin
+  mysql -uroot <<SQLEOF
+CREATE USER IF NOT EXISTS '${PMA_DB_USER}'@'localhost' IDENTIFIED BY '${PMA_DB_PASS}';
+GRANT ALL PRIVILEGES ON *.* TO '${PMA_DB_USER}'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+SQLEOF
+
+  # phpMyAdmin Konfiguration
+  cat > "${PMA_DIR}/config.inc.php" <<PMACONFIG
+<?php
+\$cfg['blowfish_secret'] = '${PMA_BLOWFISH}';
+\$i = 0;
+\$i++;
+\$cfg['Servers'][\$i]['auth_type']       = 'cookie';
+\$cfg['Servers'][\$i]['host']            = 'localhost';
+\$cfg['Servers'][\$i]['compress']        = false;
+\$cfg['Servers'][\$i]['AllowNoPassword'] = false;
+\$cfg['UploadDir']  = '';
+\$cfg['SaveDir']    = '';
+\$cfg['TempDir']    = '/var/lib/phpmyadmin/tmp';
+\$cfg['CheckConfigurationPermissions'] = false;
+PMACONFIG
+  chown www-data:www-data "${PMA_DIR}/config.inc.php"
+  chmod 640 "${PMA_DIR}/config.inc.php"
+
+  # HTTP Basic Auth
+  echo "${WP_ADMIN_USER}:$(openssl passwd -apr1 "${PMA_HTPASSWD_PASS}")" \
+    > /etc/nginx/.phpmyadmin_htpasswd
+  chmod 640 /etc/nginx/.phpmyadmin_htpasswd
+  chown root:www-data /etc/nginx/.phpmyadmin_htpasswd
+
+  # Nginx Vhost
+  cat > "/etc/nginx/sites-available/${PMA_DOMAIN}.conf" <<NGINXPMA
+server {
+    listen 80;
+    server_name ${PMA_DOMAIN};
+    root ${PMA_DIR};
+    index index.php;
+
+    auth_basic "phpMyAdmin — Restricted";
+    auth_basic_user_file /etc/nginx/.phpmyadmin_htpasswd;
+
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+
+    location ~ \.php\$ {
+        try_files \$uri =404;
+        fastcgi_pass   php${PHP_VERSION}-fpm;
+        fastcgi_index  index.php;
+        include /etc/nginx/snippets/fastcgi-params-wp.conf;
+    }
+
+    location ~* /(README|LICENSE|ChangeLog|INSTALL|setup/) {
+        deny all;
+    }
+    location ~* \.(htaccess|htpasswd|ini|log|sh|sql|bak)\$ {
+        deny all;
+    }
+}
+NGINXPMA
+
+  ln -sf "/etc/nginx/sites-available/${PMA_DOMAIN}.conf" \
+         "/etc/nginx/sites-enabled/${PMA_DOMAIN}.conf"
+  nginx -t && systemctl reload nginx
+  success "phpMyAdmin installiert unter http://${PMA_DOMAIN}"
+  info "DNS/NPM: Subdomain ${PMA_DOMAIN} → Server-IP auf Port 80 konfigurieren."
 fi
 
 # MySQL Slow Log Verzeichnis anlegen
