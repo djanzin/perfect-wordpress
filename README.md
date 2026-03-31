@@ -26,6 +26,9 @@ A single bash script that sets up a hardened, high-performance WordPress server 
 - **CLI:** WP-CLI with `wpcli` shortcut
 - **SSL:** Optional Let's Encrypt / Certbot (automatic HTTPS redirect)
 - **Backups:** Daily MariaDB dumps with 7-day rotation
+- **Reverse Proxy mode:** Auto-configures for NPM/Traefik/Cloudflare (Real-IP, HTTPS URLs, Fail2ban whitelist)
+- **phpMyAdmin:** Optional, accessible via subdomain `phpmyadmin.domain`
+- **FileBrowser:** Optional web file manager via subdomain `files.domain`
 
 ### Requirements
 
@@ -131,6 +134,9 @@ Ein einzelnes Bash-Script, das einen abgesicherten, leistungsstarken WordPress-S
 - **CLI:** WP-CLI mit `wpcli` Shortcut
 - **SSL:** Optionales Let's Encrypt / Certbot (automatischer HTTPS-Redirect)
 - **Backups:** Tägliche MariaDB-Dumps mit 7-Tage-Rotation
+- **Reverse Proxy Modus:** Automatische Konfiguration für NPM/Traefik/Cloudflare (Real-IP, HTTPS-URLs, Fail2ban Whitelist)
+- **phpMyAdmin:** Optional, erreichbar über Subdomain `phpmyadmin.domain`
+- **FileBrowser:** Optionaler Web-Dateimanager über Subdomain `files.domain`
 
 ### Voraussetzungen
 

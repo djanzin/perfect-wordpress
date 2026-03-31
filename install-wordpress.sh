@@ -54,6 +54,7 @@ WP_TIMEZONE="Europe/Berlin"
 INSTALL_SSL=false
 INSTALL_PHPMYADMIN=false
 INSTALL_FILEBROWSER=false
+REVERSE_PROXY=false
 
 # ─── Parse arguments ──────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -68,7 +69,8 @@ while [[ $# -gt 0 ]]; do
     --timezone)     WP_TIMEZONE="$2";      shift 2 ;;
     --ssl)          INSTALL_SSL=true;        shift   ;;
     --phpmyadmin)    INSTALL_PHPMYADMIN=true;  shift   ;;
-    --filebrowser)   INSTALL_FILEBROWSER=true; shift   ;;
+    --filebrowser)    INSTALL_FILEBROWSER=true;  shift   ;;
+    --reverse-proxy)  REVERSE_PROXY=true;        shift   ;;
     *) warn "Unbekannter Parameter: $1"; shift ;;
   esac
 done
@@ -138,8 +140,18 @@ if [[ "$WP_TIMEZONE" == "Europe/Berlin" ]]; then
   WP_TIMEZONE="${_tz:-Europe/Berlin}"
 fi
 
+# ─── Reverse Proxy? ───────────────────────────────────────────────────────────
+if [[ "$REVERSE_PROXY" == false ]]; then
+  read -rp "$(echo -e "${BOLD}Läuft die Site hinter einem Reverse Proxy (NPM/Traefik/Cloudflare)? [j/N]:${RESET} ")" _rp
+  [[ "${_rp,,}" == "j" || "${_rp,,}" == "y" ]] && REVERSE_PROXY=true
+fi
+if [[ "$REVERSE_PROXY" == true ]]; then
+  info "Reverse Proxy Modus aktiv — SSL via Certbot wird übersprungen."
+  INSTALL_SSL=false
+fi
+
 # ─── SSL mit Let's Encrypt? ───────────────────────────────────────────────────
-if [[ "$INSTALL_SSL" == false ]]; then
+if [[ "$INSTALL_SSL" == false && "$REVERSE_PROXY" == false ]]; then
   read -rp "$(echo -e "${BOLD}SSL mit Let's Encrypt einrichten? [j/N]:${RESET} ")" _ssl
   [[ "${_ssl,,}" == "j" || "${_ssl,,}" == "y" ]] && INSTALL_SSL=true
 fi
@@ -178,6 +190,7 @@ echo -e "  Memory Limit  : ${CYAN}${PHP_MEMORY_LIMIT}${RESET}"
 echo -e "  Sprache       : ${CYAN}${WP_LANG}${RESET}"
 echo -e "  Zeitzone      : ${CYAN}${WP_TIMEZONE}${RESET}"
 echo -e "  SSL           : ${CYAN}${INSTALL_SSL}${RESET}"
+echo -e "  Reverse Proxy : ${CYAN}${REVERSE_PROXY}${RESET}"
 echo -e "  phpMyAdmin    : ${CYAN}${INSTALL_PHPMYADMIN}${RESET}"
 echo -e "  FileBrowser   : ${CYAN}${INSTALL_FILEBROWSER}${RESET}"
 echo -e "  DB Name       : ${CYAN}${DB_NAME}${RESET}"
@@ -239,18 +252,25 @@ if [[ "$OS_TYPE" == "ubuntu" ]]; then
 fi
 success "System aktualisiert."
 
-# ─── Swap-Datei anlegen (falls < 1 GB Swap vorhanden) ────────────────────────
+# ─── Swap-Datei anlegen (dynamisch je nach RAM) ──────────────────────────────
 SWAP_TOTAL=$(free -m | awk '/^Swap:/{print $2}')
-if [[ "$SWAP_TOTAL" -lt 1024 ]]; then
-  info "Kein/wenig Swap erkannt (${SWAP_TOTAL}MB) — lege 2GB Swap an..."
-  fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+TOTAL_RAM=$(free -m | awk '/^Mem:/{print $2}')
+if [[ "$SWAP_TOTAL" -lt 512 ]]; then
+  if   [[ "$TOTAL_RAM" -lt 1024 ]]; then SWAP_SIZE="2G"; SWAP_MB=2048
+  elif [[ "$TOTAL_RAM" -lt 2048 ]]; then SWAP_SIZE="1G"; SWAP_MB=1024
+  else                                    SWAP_SIZE="512M"; SWAP_MB=512
+  fi
+  info "RAM: ${TOTAL_RAM}MB — lege ${SWAP_SIZE} Swap an..."
+  fallocate -l "$SWAP_SIZE" /swapfile 2>/dev/null \
+    || dd if=/dev/zero of=/swapfile bs=1M count="${SWAP_MB}" status=none
   chmod 600 /swapfile
   mkswap /swapfile -q
   swapon /swapfile
-  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
   sysctl -w vm.swappiness=10 >/dev/null
-  echo 'vm.swappiness=10' >> /etc/sysctl.conf
-  success "2GB Swap angelegt und aktiviert."
+  grep -q 'vm.swappiness' /etc/sysctl.conf \
+    || echo 'vm.swappiness=10' >> /etc/sysctl.conf
+  success "${SWAP_SIZE} Swap angelegt und aktiviert."
 else
   info "Swap bereits vorhanden (${SWAP_TOTAL}MB) — überspringe."
 fi
@@ -531,6 +551,19 @@ geo $limit_key {
 limit_req_zone $limit_key zone=wplogin:10m rate=2r/m;
 RATELIMIT
 
+# Real-IP Modul bei Reverse Proxy (echte Client-IPs aus X-Forwarded-For lesen)
+if [[ "$REVERSE_PROXY" == true ]]; then
+  cat > /etc/nginx/conf.d/real-ip.conf <<'REALIP'
+set_real_ip_from 10.0.0.0/8;
+set_real_ip_from 172.16.0.0/12;
+set_real_ip_from 192.168.0.0/16;
+set_real_ip_from 127.0.0.1;
+real_ip_header X-Forwarded-For;
+real_ip_recursive on;
+REALIP
+  info "Nginx Real-IP Modul konfiguriert (echte Client-IPs via X-Forwarded-For)."
+fi
+
 # Default site deaktivieren, WordPress aktivieren
 rm -f /etc/nginx/sites-enabled/default
 ln -sf "/etc/nginx/sites-available/${WP_DOMAIN}.conf" "/etc/nginx/sites-enabled/${WP_DOMAIN}.conf"
@@ -662,7 +695,10 @@ section "4/9 — MariaDB"
 if dpkg -l mariadb-server 2>/dev/null | grep -q '^ii'; then
   info "Vorherige MariaDB-Installation erkannt — bereinige für Neuinstallation..."
   systemctl stop mariadb 2>/dev/null || true
-  apt-get purge -y -qq --auto-remove mariadb-server mariadb-client mariadb-common 2>/dev/null || true
+  echo "mariadb-server mariadb-server/postrm_remove_databases boolean true" \
+    | debconf-set-selections 2>/dev/null || true
+  DEBIAN_FRONTEND=noninteractive apt-get purge -y -qq --auto-remove \
+    mariadb-server mariadb-client mariadb-common 2>/dev/null || true
   rm -rf /var/lib/mysql /etc/mysql/mariadb.conf.d/99-wordpress.cnf
   info "MariaDB bereinigt."
 fi
@@ -831,6 +867,14 @@ systemctl enable fail2ban
 systemctl restart fail2ban
 success "Fail2ban mit WordPress- und Nginx-Jails aktiviert."
 
+# Bei Reverse Proxy: private Netzwerke von Fail2ban ausschließen
+if [[ "$REVERSE_PROXY" == true ]]; then
+  sed -i '/^\[DEFAULT\]/a ignoreip = 127.0.0.1/8 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16' \
+    /etc/fail2ban/jail.local
+  systemctl restart fail2ban
+  info "Fail2ban: Private Netzwerke (10.x, 172.16.x, 192.168.x) auf Whitelist gesetzt."
+fi
+
 # =============================================================================
 # 7. WORDPRESS DOWNLOAD + KONFIGURATION
 # =============================================================================
@@ -988,6 +1032,13 @@ sudo -u www-data wp option update blogdescription "" --path="$WP_DIR"
 sudo -u www-data wp option update comment_registration 1 --path="$WP_DIR"
 sudo -u www-data wp option update default_ping_status closed --path="$WP_DIR"
 sudo -u www-data wp option update default_comment_status closed --path="$WP_DIR"
+
+# Bei Reverse Proxy: siteurl und home auf HTTPS setzen
+if [[ "$REVERSE_PROXY" == true ]]; then
+  sudo -u www-data wp option update siteurl "https://${WP_DOMAIN}" --path="$WP_DIR"
+  sudo -u www-data wp option update home    "https://${WP_DOMAIN}" --path="$WP_DIR"
+  info "WordPress URLs auf https://${WP_DOMAIN} gesetzt (Reverse Proxy Modus)."
+fi
 
 success "WP-CLI installiert und WordPress konfiguriert."
 
