@@ -804,7 +804,7 @@ cat > "$WP_DIR/wp-config.php" <<WPCONFIG
 define( 'DB_NAME',     '${DB_NAME}' );
 define( 'DB_USER',     '${DB_USER}' );
 define( 'DB_PASSWORD', '${DB_PASS}' );
-define( 'DB_HOST',     '127.0.0.1' );
+define( 'DB_HOST',     'localhost' );
 define( 'DB_CHARSET',  'utf8mb4' );
 define( 'DB_COLLATE',  'utf8mb4_unicode_ci' );
 
