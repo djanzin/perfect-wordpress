@@ -4,6 +4,7 @@
 ![Debian 13](https://img.shields.io/badge/Debian-13_Trixie-A81D33?logo=debian&logoColor=white)
 ![PHP 8.1–8.5](https://img.shields.io/badge/PHP-8.1_|_8.2_|_8.3_|_8.4_|_8.5-777BB4?logo=php&logoColor=white)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-djanzin-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/djanzin)
 
 Automated, production-ready WordPress installer for Ubuntu 24.04 LTS and Debian 13 (Trixie).
 
