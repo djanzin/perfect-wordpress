@@ -941,6 +941,12 @@ success "WP-CLI installiert und WordPress konfiguriert."
 # =============================================================================
 section "9/9 — Logrotation, Cron & finale Optimierungen"
 
+# cron-Daemon sicherstellen (auf Debian 13 nicht vorinstalliert)
+if ! command -v crontab &>/dev/null; then
+  apt-get install -y -qq cron
+  systemctl enable cron
+fi
+
 # Logrotation für Nginx / PHP / MySQL
 cat > /etc/logrotate.d/wordpress-stack <<'LOGROTATE'
 /var/log/nginx/*.log {
