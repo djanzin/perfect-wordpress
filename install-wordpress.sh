@@ -361,6 +361,7 @@ PMA_DB_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 32 || true)"
 PMA_BLOWFISH="$(tr -dc 'A-Za-z0-9!@#$%^&*()_+' </dev/urandom | head -c 32 || true)"
 PMA_HTPASSWD_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16 || true)"
 FB_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 24 || true)"
+FB_HTPASSWD_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16 || true)"
 
 # ─── Summary ──────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}${L_SUMMARY}:${RESET}"
@@ -410,6 +411,7 @@ if [[ "$INSTALL_FILEBROWSER" == true ]]; then
 cat >> "$CREDS_FILE" <<EOF
 ─────────────────────────────────────
 FileBrowser URL:    http://files.${WP_DOMAIN}
+FileBrowser Login:  ${WP_ADMIN_USER} / ${FB_HTPASSWD_PASS}  (HTTP Basic Auth)
 FileBrowser User:   ${WP_ADMIN_USER}
 FileBrowser Pass:   ${FB_PASS}
 EOF
@@ -1469,6 +1471,12 @@ FBSERVICE
   systemctl enable filebrowser
   systemctl start filebrowser
 
+  # HTTP Basic Auth für FileBrowser
+  echo "${WP_ADMIN_USER}:$(openssl passwd -apr1 "${FB_HTPASSWD_PASS}")" \
+    > /etc/nginx/.filebrowser_htpasswd
+  chmod 640 /etc/nginx/.filebrowser_htpasswd
+  chown root:www-data /etc/nginx/.filebrowser_htpasswd
+
   # Nginx Vhost (Reverse Proxy zu FileBrowser)
   cat > "/etc/nginx/sites-available/${FB_DOMAIN}.conf" <<NGINXFB
 server {
@@ -1476,6 +1484,9 @@ server {
     server_name ${FB_DOMAIN};
 
     location / {
+        auth_basic "FileBrowser — Restricted";
+        auth_basic_user_file /etc/nginx/.filebrowser_htpasswd;
+
         proxy_pass         http://127.0.0.1:${FB_PORT};
         proxy_set_header   Host \$host;
         proxy_set_header   X-Real-IP \$remote_addr;
