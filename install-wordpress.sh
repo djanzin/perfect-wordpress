@@ -141,12 +141,12 @@ if [[ "$INSTALL_SSL" == false ]]; then
 fi
 
 # ─── Generate random secrets ──────────────────────────────────────────────────
-DB_NAME="wp_$(tr -dc 'a-z0-9' </dev/urandom | head -c 8)"
-DB_USER="wpuser_$(tr -dc 'a-z0-9' </dev/urandom | head -c 6)"
-DB_PASS="$(tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 32)"
-DB_ROOT_PASS="$(tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 32)"
-WP_ADMIN_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 24)"
-REDIS_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)"
+DB_NAME="wp_$(tr -dc 'a-z0-9' </dev/urandom | head -c 8 || true)"
+DB_USER="wpuser_$(tr -dc 'a-z0-9' </dev/urandom | head -c 6 || true)"
+DB_PASS="$(tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 32 || true)"
+DB_ROOT_PASS="$(tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c 32 || true)"
+WP_ADMIN_PASS="$(tr -dc 'A-Za-z0-9!@#$%' </dev/urandom | head -c 24 || true)"
+REDIS_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32 || true)"
 
 # ─── Summary ──────────────────────────────────────────────────────────────────
 echo -e "\n${BOLD}Installationsparameter:${RESET}"
@@ -804,7 +804,7 @@ define( 'DB_COLLATE',  'utf8mb4_unicode_ci' );
 ${WP_SECURITY_KEYS}
 
 // ─── Datenbanktabellen-Präfix ─────────────────────────────────────────────────
-\$table_prefix = 'wp_$(tr -dc 'a-z' </dev/urandom | head -c 4)_';
+\$table_prefix = 'wp_$(tr -dc 'a-z' </dev/urandom | head -c 4 || true)_';
 
 // ─── Redis Object Cache ───────────────────────────────────────────────────────
 define( 'WP_REDIS_HOST',     '127.0.0.1' );
