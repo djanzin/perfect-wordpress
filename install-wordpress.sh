@@ -1030,15 +1030,31 @@ systemctl restart mariadb
 systemctl restart redis-server
 nginx -t && systemctl reload nginx
 
+# Kurz warten bis alle Dienste stabil sind
+sleep 3
+
 # ─── Service-Status Abschlusskontrolle ────────────────────────────────────────
 echo -e "\n${BOLD}Service-Status:${RESET}"
+FAILED_SERVICES=()
 for svc in nginx "php${PHP_VERSION}-fpm" mariadb redis-server fail2ban; do
   if systemctl is-active --quiet "$svc"; then
     echo -e "  ${GREEN}[OK]${RESET}    $svc"
   else
-    echo -e "  ${RED}[FEHLER]${RESET} $svc — nicht aktiv!"
+    echo -e "  ${RED}[FEHLER]${RESET} $svc — nicht aktiv! Versuche Neustart..."
+    systemctl start "$svc" 2>/dev/null || true
+    sleep 2
+    if systemctl is-active --quiet "$svc"; then
+      echo -e "  ${GREEN}[OK]${RESET}    $svc (nach Neustart)"
+    else
+      echo -e "  ${RED}[FEHLER]${RESET} $svc — Start fehlgeschlagen. Bitte prüfen: journalctl -u $svc"
+      FAILED_SERVICES+=("$svc")
+    fi
   fi
 done
+
+if [[ ${#FAILED_SERVICES[@]} -gt 0 ]]; then
+  warn "Folgende Dienste konnten nicht gestartet werden: ${FAILED_SERVICES[*]}"
+fi
 
 # =============================================================================
 # ABSCHLUSSBERICHT
