@@ -164,7 +164,7 @@ if [[ "$ENGLISH" == true ]]; then
   L_F2B_WHITELIST="Fail2ban: Private networks (10.x, 172.16.x, 192.168.x) always whitelisted."
   L_WP_OK="WordPress downloaded and configured."
   L_URLS_HTTPS="WordPress URLs set to https."
-  L_NGINX_HELPER_OK="Nginx Helper configured (FastCGI cache purge active)."
+  L_NGINX_HELPER_OK="Nginx Helper installed and configured — please activate it manually in WP Admin > Plugins."
   L_WPCLI_OK="WP-CLI installed and WordPress configured."
   L_BACKUPS_OK="Automatic DB backups configured (/root/backups/mysql, 7-day rotation)."
   L_SSL_OK="SSL certificate set up. HTTPS active."
@@ -236,7 +236,7 @@ else
   L_F2B_WHITELIST="Fail2ban: Private Netzwerke (10.x, 172.16.x, 192.168.x) immer auf Whitelist."
   L_WP_OK="WordPress heruntergeladen und konfiguriert."
   L_URLS_HTTPS="WordPress URLs auf https gesetzt."
-  L_NGINX_HELPER_OK="Nginx Helper konfiguriert (FastCGI-Cache-Purge aktiv)."
+  L_NGINX_HELPER_OK="Nginx Helper installiert und konfiguriert — bitte manuell aktivieren unter WP Admin > Plugins."
   L_WPCLI_OK="WP-CLI installiert und WordPress konfiguriert."
   L_BACKUPS_OK="Automatische DB-Backups konfiguriert (/root/backups/mysql, 7 Tage Rotation)."
   L_SSL_OK="SSL-Zertifikat eingerichtet. HTTPS aktiv."
@@ -1216,12 +1216,10 @@ if [[ "$REVERSE_PROXY" == true || "$INSTALL_SSL" == true ]]; then
   info "$L_URLS_HTTPS"
 fi
 
-# Nginx Helper konfigurieren & erstmals aktivieren (nach URL + Permalink Setup,
-# damit der Activation-Hook nur einmal und mit korrekten Einstellungen läuft)
+# Nginx Helper konfigurieren — Plugin bleibt deaktiviert, Nutzer aktiviert es manuell im WP Admin
 sudo -u www-data wp option update rt_wp_nginx_helper_options \
   '{"enable_purge":"1","cache_method":"enable_fastcgi","purge_method":"get_request","nginx_server_hostname":"127.0.0.1","nginx_server_port":"80","enable_map":"0","enable_log":"0","log_level":"INFO","log_filesize":"5","enable_stamp":"0","purge_homepage_on_edit":"1","purge_homepage_on_del":"1","purge_archive_on_edit":"1","purge_archive_on_del":"1","purge_page_on_mod":"1","purge_page_on_new_comment":"1","purge_page_on_deleted_comment":"1"}' \
   --format=json --path="$WP_DIR"
-sudo -u www-data wp plugin activate nginx-helper --path="$WP_DIR"
 success "$L_NGINX_HELPER_OK"
 
 success "$L_WPCLI_OK"
