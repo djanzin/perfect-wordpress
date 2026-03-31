@@ -72,8 +72,9 @@ WP_DOMAIN=$(basename "$WP_PATH")
   WP_DOMAIN=$(grep -i "WP_HOME\|siteurl" "${WP_PATH}/wp-config.php" 2>/dev/null \
     | head -1 | sed "s/.*['\"]https\?:\/\/\([^'\"]*\)['\"].*/\1/" || echo "wordpress")
 
-WP_BIN=$(command -v wp || echo "/usr/local/bin/wp")
-WP_CLI="${WP_BIN} --path=${WP_PATH} --allow-root"
+WP_BIN=$(command -v wp 2>/dev/null || true)
+[[ -z "$WP_BIN" || ! -x "$WP_BIN" ]] && WP_BIN="/usr/local/bin/wp"
+WP_CLI=("$WP_BIN" --path="$WP_PATH" --allow-root)
 
 section "WordPress Stack Updater"
 echo -e "  WordPress-Pfad : ${CYAN}${WP_PATH}${RESET}"
@@ -109,13 +110,13 @@ fi
 
 # ─── 3. WordPress Core ────────────────────────────────────────────────────────
 section "WordPress Core Update"
-WP_VERSION_BEFORE=$($WP_CLI core version 2>/dev/null || echo "unbekannt")
+WP_VERSION_BEFORE=$("${WP_CLI[@]}" core version 2>/dev/null || echo "unbekannt")
 info "Aktuelle WP-Version: ${WP_VERSION_BEFORE}"
 
-if $WP_CLI core check-update 2>/dev/null | grep -q 'update available'; then
-  $WP_CLI core update
-  $WP_CLI core update-db
-  WP_VERSION_AFTER=$($WP_CLI core version 2>/dev/null || echo "unbekannt")
+if "${WP_CLI[@]}" core check-update 2>/dev/null | grep -q 'update available'; then
+  "${WP_CLI[@]}" core update
+  "${WP_CLI[@]}" core update-db
+  WP_VERSION_AFTER=$("${WP_CLI[@]}" core version 2>/dev/null || echo "unbekannt")
   success "WordPress Core aktualisiert: ${WP_VERSION_BEFORE} → ${WP_VERSION_AFTER}"
 else
   success "WordPress Core ist aktuell (${WP_VERSION_BEFORE})."
@@ -123,10 +124,10 @@ fi
 
 # ─── 4. Plugins ───────────────────────────────────────────────────────────────
 section "Plugin-Updates"
-PLUGINS_WITH_UPDATES=$($WP_CLI plugin list --update=available --format=count 2>/dev/null || echo "0")
+PLUGINS_WITH_UPDATES=$("${WP_CLI[@]}" plugin list --update=available --format=count 2>/dev/null || echo "0")
 if [[ "$PLUGINS_WITH_UPDATES" -gt 0 ]]; then
   info "${PLUGINS_WITH_UPDATES} Plugin(s) mit verfügbaren Updates..."
-  $WP_CLI plugin update --all
+  "${WP_CLI[@]}" plugin update --all
   success "Alle Plugins aktualisiert."
 else
   success "Alle Plugins sind aktuell."
@@ -134,10 +135,10 @@ fi
 
 # ─── 5. Themes ────────────────────────────────────────────────────────────────
 section "Theme-Updates"
-THEMES_WITH_UPDATES=$($WP_CLI theme list --update=available --format=count 2>/dev/null || echo "0")
+THEMES_WITH_UPDATES=$("${WP_CLI[@]}" theme list --update=available --format=count 2>/dev/null || echo "0")
 if [[ "$THEMES_WITH_UPDATES" -gt 0 ]]; then
   info "${THEMES_WITH_UPDATES} Theme(s) mit verfügbaren Updates..."
-  $WP_CLI theme update --all
+  "${WP_CLI[@]}" theme update --all
   success "Alle Themes aktualisiert."
 else
   success "Alle Themes sind aktuell."
@@ -147,7 +148,7 @@ fi
 section "Cache leeren"
 
 # WordPress & Redis Cache
-$WP_CLI cache flush 2>/dev/null && info "WordPress Object Cache geleert." || true
+"${WP_CLI[@]}" cache flush 2>/dev/null && info "WordPress Object Cache geleert." || true
 
 # FastCGI Cache leeren
 if [[ -d "/var/cache/nginx/fastcgi" ]]; then
