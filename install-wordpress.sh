@@ -1015,7 +1015,9 @@ success "Nginx Helper installiert und konfiguriert (FastCGI-Cache-Purge aktiv)."
 
 # Standard-Plugins & Themes bereinigen
 sudo -u www-data wp plugin delete hello akismet --path="$WP_DIR" 2>/dev/null || true
-sudo -u www-data wp theme delete twentytwenty twentytwentyone twentytwentytwo --path="$WP_DIR" 2>/dev/null || true
+# Alle inaktiven Themes entfernen
+sudo -u www-data wp theme list --status=inactive --field=name --path="$WP_DIR" 2>/dev/null \
+  | xargs -r sudo -u www-data wp theme delete --path="$WP_DIR" 2>/dev/null || true
 
 # Permalinks setzen (SEO-optimiert)
 sudo -u www-data wp rewrite structure '/%postname%/' --hard --path="$WP_DIR"
@@ -1031,11 +1033,11 @@ sudo -u www-data wp option update comment_registration 1 --path="$WP_DIR"
 sudo -u www-data wp option update default_ping_status closed --path="$WP_DIR"
 sudo -u www-data wp option update default_comment_status closed --path="$WP_DIR"
 
-# Bei Reverse Proxy: siteurl und home auf HTTPS setzen
-if [[ "$REVERSE_PROXY" == true ]]; then
+# Bei Reverse Proxy oder SSL: siteurl und home auf HTTPS setzen
+if [[ "$REVERSE_PROXY" == true || "$INSTALL_SSL" == true ]]; then
   sudo -u www-data wp option update siteurl "https://${WP_DOMAIN}" --path="$WP_DIR"
   sudo -u www-data wp option update home    "https://${WP_DOMAIN}" --path="$WP_DIR"
-  info "WordPress URLs auf https://${WP_DOMAIN} gesetzt (Reverse Proxy Modus)."
+  info "WordPress URLs auf https://${WP_DOMAIN} gesetzt."
 fi
 
 success "WP-CLI installiert und WordPress konfiguriert."
@@ -1093,6 +1095,9 @@ cat > /etc/cron.d/wordpress-cron <<WPCRON
 */5 * * * * www-data /usr/local/bin/wp --path=${WP_DIR} cron event run --due-now --quiet
 WPCRON
 chmod 644 /etc/cron.d/wordpress-cron
+
+# WP-Cron einmalig direkt ausführen damit keine Events als "late" markiert werden
+sudo -u www-data /usr/local/bin/wp --path="${WP_DIR}" cron event run --due-now --quiet 2>/dev/null || true
 
 # ─── Automatische Datenbank-Backups (täglich, 7 Tage Rotation) ────────────────
 mkdir -p /root/backups/mysql
