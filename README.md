@@ -138,6 +138,7 @@ sudo bash update-wordpress.sh --ssl          # additionally: renew SSL certifica
 | `--wpcli` | Update WP-CLI to latest version |
 | `--ssl` | Renew SSL certificate via Certbot |
 | `--wp-path` | Custom WordPress path (auto-detected if omitted) |
+| `--english` | English status messages | `false` |
 
 ### Reset
 
@@ -145,6 +146,12 @@ Removes everything installed by this script — WordPress, Nginx, PHP-FPM, Maria
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
+```
+
+Use `--english` for English output:
+
+```bash
+sudo bash reset-wordpress.sh --english
 ```
 
 > **Warning:** This is irreversible. All data including the database and uploaded files will be permanently deleted.
@@ -281,6 +288,7 @@ sudo bash update-wordpress.sh --ssl          # Zusätzlich: SSL-Zertifikat erneu
 | `--wpcli` | WP-CLI auf neueste Version aktualisieren |
 | `--ssl` | SSL-Zertifikat via Certbot erneuern |
 | `--wp-path` | Eigener WordPress-Pfad (wird automatisch erkannt falls nicht angegeben) |
+| `--english` | Englische Statusmeldungen | `false` |
 
 ### Reset
 
@@ -288,6 +296,12 @@ Entfernt alles was dieses Script installiert hat — WordPress, Nginx, PHP-FPM, 
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
+```
+
+Mit `--english` für englische Ausgabe:
+
+```bash
+sudo bash reset-wordpress.sh --english
 ```
 
 > **Warnung:** Dieser Vorgang ist unwiderruflich. Alle Daten einschließlich Datenbank und hochgeladener Dateien werden dauerhaft gelöscht.
