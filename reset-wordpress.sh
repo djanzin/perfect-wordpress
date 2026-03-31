@@ -81,6 +81,11 @@ if [[ "$ENGLISH" == true ]]; then
   L_SWAP_NOT_FOUND="No swap file found — skipping."
   L_DONE="Reset complete"
   L_REBOOT="Recommendation: restart the server with 'reboot'"
+  L_NOT_FOUND="not found"
+  L_UNKNOWN="unknown"
+  L_DB_DROPPED="Database dropped"
+  L_DB_USER_DROPPED="DB user dropped"
+  L_SVC_STOPPED="stopped"
 else
   L_ROOT_ERR="Bitte als root ausführen: sudo bash $0"
   L_SECTION_HEADER="WordPress Stack Reset"
@@ -122,6 +127,11 @@ else
   L_SWAP_NOT_FOUND="Keine Swap-Datei gefunden — überspringe."
   L_DONE="Reset abgeschlossen"
   L_REBOOT="Empfehlung: Server neu starten mit 'reboot'"
+  L_NOT_FOUND="nicht gefunden"
+  L_UNKNOWN="unbekannt"
+  L_DB_DROPPED="Datenbank gelöscht"
+  L_DB_USER_DROPPED="DB-User gelöscht"
+  L_SVC_STOPPED="gestoppt"
 fi
 
 # ─── WordPress-Pfad & Domain ermitteln ────────────────────────────────────────
@@ -155,21 +165,17 @@ if [[ -n "$WP_PATH" && -f "${WP_PATH}/wp-config.php" ]]; then
 fi
 
 section "$L_SECTION_HEADER"
-echo -e "  $L_WP_PATH_LABEL : ${CYAN}${WP_PATH:-nicht gefunden}${RESET}"
-echo -e "  $L_DOMAIN_LABEL  : ${CYAN}${WP_DOMAIN:-unbekannt}${RESET}"
-echo -e "  $L_PHP_LABEL     : ${CYAN}${PHP_VERSION:-unbekannt}${RESET}"
-echo -e "  $L_DB_LABEL      : ${CYAN}${DB_NAME:-unbekannt}${RESET}"
+echo -e "  $L_WP_PATH_LABEL : ${CYAN}${WP_PATH:-$L_NOT_FOUND}${RESET}"
+echo -e "  $L_DOMAIN_LABEL  : ${CYAN}${WP_DOMAIN:-$L_UNKNOWN}${RESET}"
+echo -e "  $L_PHP_LABEL     : ${CYAN}${PHP_VERSION:-$L_UNKNOWN}${RESET}"
+echo -e "  $L_DB_LABEL      : ${CYAN}${DB_NAME:-$L_UNKNOWN}${RESET}"
 echo ""
 
 # ─── 1. Services stoppen ──────────────────────────────────────────────────────
 section "$L_SECTION_SERVICES"
 for svc in filebrowser nginx "php${PHP_VERSION}-fpm" redis-server fail2ban; do
   if systemctl is-active --quiet "$svc" 2>/dev/null; then
-    if [[ "$ENGLISH" == true ]]; then
-      systemctl stop "$svc" 2>/dev/null && info "$svc stopped." || true
-    else
-      systemctl stop "$svc" 2>/dev/null && info "$svc gestoppt." || true
-    fi
+    systemctl stop "$svc" 2>/dev/null && info "$svc $L_SVC_STOPPED." || true
   fi
   systemctl disable "$svc" 2>/dev/null || true
 done
@@ -209,11 +215,11 @@ section "$L_SECTION_DB"
 if systemctl is-active --quiet mariadb 2>/dev/null; then
   [[ -n "$DB_NAME" ]] && \
     mysql -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`;" 2>/dev/null && \
-    success "Datenbank '${DB_NAME}' gelöscht." || true
+    success "$L_DB_DROPPED: ${DB_NAME}" || true
 
   [[ -n "$DB_USER" && "$DB_USER" != "root" ]] && \
     mysql -e "DROP USER IF EXISTS '${DB_USER}'@'localhost';" 2>/dev/null && \
-    success "DB-User '${DB_USER}' gelöscht." || true
+    success "$L_DB_USER_DROPPED: ${DB_USER}" || true
 
   mysql -e "DROP USER IF EXISTS 'phpmyadmin'@'localhost';" 2>/dev/null || true
   mysql -e "FLUSH PRIVILEGES;" 2>/dev/null || true
