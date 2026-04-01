@@ -1451,6 +1451,7 @@ if [[ "$INSTALL_FILEBROWSER" == true ]]; then
   rm -rf /tmp/fb-extract
   chmod +x /usr/local/bin/filebrowser
   rm -f /tmp/filebrowser.tar.gz
+  hash -r
 
   mkdir -p /var/lib/filebrowser
 
