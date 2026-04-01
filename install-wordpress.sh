@@ -74,6 +74,7 @@ INSTALL_PHPMYADMIN=false
 INSTALL_FILEBROWSER=false
 REVERSE_PROXY=false
 ENGLISH=false
+NONINTERACTIVE=false
 
 # ─── Parse arguments ──────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -91,6 +92,7 @@ while [[ $# -gt 0 ]]; do
     --filebrowser)    INSTALL_FILEBROWSER=true;  shift   ;;
     --reverse-proxy)  REVERSE_PROXY=true;        shift   ;;
     --english)        ENGLISH=true;              shift   ;;
+    --yes)            NONINTERACTIVE=true;       shift   ;;
     *) if [[ "$_ENGLISH_PRESCAN" == true ]]; then warn "Unknown parameter: $1"; else warn "Unbekannter Parameter: $1"; fi; shift ;;
   esac
 done
@@ -269,14 +271,18 @@ if [[ -z "$WP_ADMIN_EMAIL" ]]; then
 fi
 [[ -z "$WP_ADMIN_EMAIL" ]] && error "$L_ERR_EMAIL"
 
-read -rp "$(echo -e "${BOLD}${L_PROMPT_TITLE}:${RESET} ")" _title
-WP_SITE_TITLE="${_title:-$WP_SITE_TITLE}"
+if [[ "$NONINTERACTIVE" == false ]]; then
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_TITLE}:${RESET} ")" _title
+  WP_SITE_TITLE="${_title:-$WP_SITE_TITLE}"
+fi
 
-read -rp "$(echo -e "${BOLD}${L_PROMPT_USER}:${RESET} ")" _user
-WP_ADMIN_USER="${_user:-$WP_ADMIN_USER}"
+if [[ "$NONINTERACTIVE" == false ]]; then
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_USER}:${RESET} ")" _user
+  WP_ADMIN_USER="${_user:-$WP_ADMIN_USER}"
+fi
 
 # ─── PHP version selection ────────────────────────────────────────────────────
-if [[ "$PHP_VERSION" == "8.3" ]]; then
+if [[ "$PHP_VERSION" == "8.3" && "$NONINTERACTIVE" == false ]]; then
   echo -e "\n${BOLD}${L_PHP_SELECT}:${RESET}"
   echo -e "  1) PHP 8.1"
   echo -e "  2) PHP 8.2"
@@ -295,7 +301,7 @@ if [[ "$PHP_VERSION" == "8.3" ]]; then
 fi
 
 # ─── PHP memory limit selection ───────────────────────────────────────────────
-if [[ "$PHP_MEMORY_LIMIT" == "256M" ]]; then
+if [[ "$PHP_MEMORY_LIMIT" == "256M" && "$NONINTERACTIVE" == false ]]; then
   echo -e "\n${BOLD}${L_MEM_SELECT}:${RESET}"
   echo -e "  1) 128M   ${CYAN}(${L_MEM_SMALL})${RESET}"
   echo -e "  2) 256M   ${CYAN}[${L_MEM_STD}]${RESET}"
@@ -312,17 +318,17 @@ if [[ "$PHP_MEMORY_LIMIT" == "256M" ]]; then
 fi
 
 # ─── Language & timezone ─────────────────────────────────────────────────────
-if [[ "$WP_LANG" == "$L_WP_LANG_DEFAULT" ]]; then
+if [[ "$WP_LANG" == "$L_WP_LANG_DEFAULT" && "$NONINTERACTIVE" == false ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_LANG}:${RESET} ")" _lang
   WP_LANG="${_lang:-$L_WP_LANG_DEFAULT}"
 fi
-if [[ "$WP_TIMEZONE" == "Europe/Berlin" ]]; then
+if [[ "$WP_TIMEZONE" == "Europe/Berlin" && "$NONINTERACTIVE" == false ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_TZ}:${RESET} ")" _tz
   WP_TIMEZONE="${_tz:-Europe/Berlin}"
 fi
 
 # ─── Reverse proxy? ───────────────────────────────────────────────────────────
-if [[ "$REVERSE_PROXY" == false ]]; then
+if [[ "$REVERSE_PROXY" == false && "$NONINTERACTIVE" == false ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_PROXY}${RESET} ")" _rp
   [[ "${_rp,,}" == "j" || "${_rp,,}" == "y" ]] && REVERSE_PROXY=true
 fi
@@ -332,19 +338,19 @@ if [[ "$REVERSE_PROXY" == true ]]; then
 fi
 
 # ─── SSL with Let's Encrypt? ─────────────────────────────────────────────────
-if [[ "$INSTALL_SSL" == false && "$REVERSE_PROXY" == false ]]; then
+if [[ "$INSTALL_SSL" == false && "$REVERSE_PROXY" == false && "$NONINTERACTIVE" == false ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_SSL}${RESET} ")" _ssl
   [[ "${_ssl,,}" == "j" || "${_ssl,,}" == "y" ]] && INSTALL_SSL=true
 fi
 
 # ─── phpMyAdmin? ─────────────────────────────────────────────────────────────
-if [[ "$INSTALL_PHPMYADMIN" == false ]]; then
+if [[ "$INSTALL_PHPMYADMIN" == false && "$NONINTERACTIVE" == false ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_PMA/DOMAIN/$WP_DOMAIN}${RESET} ")" _pma
   [[ "${_pma,,}" == "j" || "${_pma,,}" == "y" ]] && INSTALL_PHPMYADMIN=true
 fi
 
 # ─── FileBrowser? ────────────────────────────────────────────────────────────
-if [[ "$INSTALL_FILEBROWSER" == false ]]; then
+if [[ "$INSTALL_FILEBROWSER" == false && "$NONINTERACTIVE" == false ]]; then
   read -rp "$(echo -e "${BOLD}${L_PROMPT_FB/DOMAIN/$WP_DOMAIN}${RESET} ")" _fb
   [[ "${_fb,,}" == "j" || "${_fb,,}" == "y" ]] && INSTALL_FILEBROWSER=true
 fi
@@ -378,8 +384,10 @@ echo -e "  FileBrowser   : ${CYAN}${INSTALL_FILEBROWSER}${RESET}"
 echo -e "  DB Name       : ${CYAN}${DB_NAME}${RESET}"
 echo -e "  DB User       : ${CYAN}${DB_USER}${RESET}"
 echo ""
-read -rp "$(echo -e "${BOLD}${L_PROMPT_CONFIRM}${RESET} ")" CONFIRM
-[[ "${CONFIRM,,}" != "j" && "${CONFIRM,,}" != "y" ]] && echo "$L_ABORTED" && exit 0
+if [[ "$NONINTERACTIVE" == false ]]; then
+  read -rp "$(echo -e "${BOLD}${L_PROMPT_CONFIRM}${RESET} ")" CONFIRM
+  [[ "${CONFIRM,,}" != "j" && "${CONFIRM,,}" != "y" ]] && echo "$L_ABORTED" && exit 0
+fi
 
 # ─── Credentials speichern ────────────────────────────────────────────────────
 CREDS_FILE="/root/.wp_install_credentials_${WP_DOMAIN}.txt"
