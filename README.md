@@ -39,13 +39,13 @@ A single bash script that sets up a hardened, high-performance WordPress server 
 ### One-line install (directly from GitHub)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh
 ```
 
 With flags (non-interactive):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh --domain example.com --email admin@example.com --ssl
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh --domain example.com --email admin@example.com --ssl
 ```
 
 The script will interactively ask for:
@@ -118,7 +118,7 @@ Database backups are stored in:
 ### Update
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/update-wordpress.sh -o /tmp/update-wp.sh && sudo bash /tmp/update-wp.sh
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/update-wordpress.sh -o /tmp/update-wp.sh && sudo bash /tmp/update-wp.sh
 ```
 
 With flags:
@@ -145,7 +145,7 @@ sudo bash update-wordpress.sh --ssl          # additionally: renew SSL certifica
 Removes everything installed by this script — WordPress, Nginx, PHP-FPM, MariaDB, Redis, Fail2ban, WP-CLI, phpMyAdmin, FileBrowser, SSL certificates, cron jobs and swap. Runs without any prompts.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
 ```
 
 Use `--english` for English output:
@@ -189,13 +189,13 @@ Ein einzelnes Bash-Script, das einen abgesicherten, leistungsstarken WordPress-S
 ### Ein-Befehl-Installation (direkt von GitHub)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh
 ```
 
 Mit Flags (nicht-interaktiv):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh --domain example.com --email admin@example.com --ssl
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/install-wordpress.sh -o /tmp/install-wp.sh && sudo bash /tmp/install-wp.sh --domain example.com --email admin@example.com --ssl
 ```
 
 Das Script fragt interaktiv nach:
@@ -268,7 +268,7 @@ Datenbank-Backups befinden sich in:
 ### Update
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/update-wordpress.sh -o /tmp/update-wp.sh && sudo bash /tmp/update-wp.sh
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/update-wordpress.sh -o /tmp/update-wp.sh && sudo bash /tmp/update-wp.sh
 ```
 
 Mit Flags:
@@ -295,7 +295,7 @@ sudo bash update-wordpress.sh --ssl          # Zusätzlich: SSL-Zertifikat erneu
 Entfernt alles was dieses Script installiert hat — WordPress, Nginx, PHP-FPM, MariaDB, Redis, Fail2ban, WP-CLI, phpMyAdmin, FileBrowser, SSL-Zertifikate, Cron-Jobs und Swap. Läuft ohne Rückfragen durch.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/djanzin/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
+curl -fsSL https://raw.githubusercontent.com/greecro/perfect-wordpress/main/reset-wordpress.sh -o /tmp/reset-wp.sh && sudo bash /tmp/reset-wp.sh
 ```
 
 Mit `--english` für englische Ausgabe:
